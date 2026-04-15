@@ -3,19 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>Power Monitoring System - AC/DC with Relay Control & PWA</title>
-    
-    <!-- PWA Meta Tags -->
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#667eea">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Power Monitor">
-    <link rel="apple-touch-icon" href="https://via.placeholder.com/192x192?text=Power">
-    
+    <title>Power Monitoring System - AC/DC with Relay Control</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -51,36 +41,6 @@
 
         .connected { background: #10b981; color: white; }
         .disconnected { background: #ef4444; color: white; }
-        .connecting { background: #f59e0b; color: white; animation: pulse 1s infinite; }
-
-        .notification-permission {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: white;
-            border-radius: 10px;
-            padding: 10px 15px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-            z-index: 1000;
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-
-        .notify-btn {
-            background: #667eea;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        .notify-btn.enabled {
-            background: #10b981;
-        }
 
         .tabs {
             display: flex;
@@ -333,34 +293,6 @@
             opacity: 0.8;
         }
 
-        .simulator-panel {
-            background: white;
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
-
-        .simulator-controls {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .simulator-btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: all 0.3s ease;
-        }
-
-        .simulator-btn.normal { background: #10b981; color: white; }
-        .simulator-btn.overvoltage { background: #ef4444; color: white; }
-        .simulator-btn.overcurrent { background: #f59e0b; color: white; }
-
         @keyframes blink {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
@@ -380,7 +312,6 @@
             .parameter-grid { grid-template-columns: repeat(2, 1fr); }
             .tab-btn { padding: 8px 16px; font-size: 0.9em; }
             .relay-control { width: 100%; justify-content: center; }
-            .notification-permission { bottom: 10px; right: 10px; left: 10px; }
         }
 
         @media (max-width: 480px) {
@@ -396,19 +327,12 @@
             <p>Real-time AC/DC Monitoring with Relay Control & Protection</p>
             <div>
                 <span class="status-badge disconnected" id="connectionStatus">Disconnected</span>
-                <span id="mqttInfo" style="display: block; font-size: 0.8em; margin-top: 5px;"></span>
             </div>
-        </div>
-
-        <div class="notification-permission" id="notificationPrompt">
-            <span>🔔 Enable notifications for fault alerts</span>
-            <button class="notify-btn" id="enableNotifications">Enable Notifications</button>
         </div>
 
         <div class="tabs">
             <button class="tab-btn active" onclick="switchTab('monitor')">Monitor</button>
             <button class="tab-btn" onclick="switchTab('settings')">Settings</button>
-            <button class="tab-btn" onclick="switchTab('simulator')">Simulator</button>
         </div>
 
         <!-- Monitor Tab -->
@@ -504,10 +428,10 @@
                 <div class="chart-header">
                     <h3>Real-time Data Charts (FIFO - Last 10 readings)</h3>
                     <div class="chart-controls">
-                        <button class="btn active" onclick="switchChart('voltage', event)">Voltage</button>
-                        <button class="btn" onclick="switchChart('current', event)">Current</button>
-                        <button class="btn" onclick="switchChart('power', event)">Power</button>
-                        <button class="btn" onclick="switchChart('energy', event)">Energy</button>
+                        <button class="btn active" onclick="switchChart('voltage')">Voltage</button>
+                        <button class="btn" onclick="switchChart('current')">Current</button>
+                        <button class="btn" onclick="switchChart('power')">Power</button>
+                        <button class="btn" onclick="switchChart('energy')">Energy</button>
                     </div>
                 </div>
                 <div class="chart-wrapper">
@@ -567,64 +491,27 @@
                         <label>Test Mode</label>
                         <div id="testModeStatus">--</div>
                     </div>
-                    <div class="setting-item">
-                        <label>Notification Status</label>
-                        <div id="notificationStatus">Not enabled</div>
-                    </div>
                 </div>
                 <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
                     <button class="btn" onclick="sendCommand('get_status')">Refresh Status</button>
                     <button class="btn" onclick="sendCommand('reset_all_faults')" style="background: #ef4444;">Reset All Faults</button>
-                    <button class="btn" onclick="testNotification()" style="background: #f59e0b;">Test Notification</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Simulator Tab -->
-        <div id="simulatorTab" class="tab-content">
-            <div class="simulator-panel">
-                <h3 style="margin-bottom: 20px;">MQTT Simulator (Test tanpa hardware)</h3>
-                <p style="margin-bottom: 15px; color: #6b7280;">Gunakan simulator ini untuk menguji notifikasi dan proteksi tanpa perangkat fisik.</p>
-                <div class="simulator-controls">
-                    <button class="simulator-btn normal" onclick="simulateNormalData()">✅ Normal Values</button>
-                    <button class="simulator-btn overvoltage" onclick="simulateOvervoltage()">⚠️ Simulate Overvoltage</button>
-                    <button class="simulator-btn overcurrent" onclick="simulateOvercurrent()">⚠️ Simulate Overcurrent</button>
-                </div>
-                <div style="margin-top: 15px; text-align: center;">
-                    <button class="btn" onclick="simulateFaultClear()">Clear Fault & Reset</button>
                 </div>
             </div>
         </div>
 
         <div class="footer">
-            <p>MQTT Broker: broker.hivemq.com:8000/mqtt | Real-time Monitoring</p>
+            <p>Connected to HiveMQ Broker | Real-time Monitoring | Auto-refresh</p>
             <p>Protection: AC ><span id="acVlimitDisplay">260</span>V / ><span id="acIlimitDisplay">10</span>A | DC ><span id="dcVlimitDisplay">25</span>V / ><span id="dcIlimitDisplay">10</span>A</p>
             <p><strong>How to reset:</strong> When fault occurs, relay turns OFF. After values return to normal, press RESET button to clear fault and reactivate relay.</p>
         </div>
     </div>
 
     <script>
-        // ============ MQTT Configuration ============
-        // Menggunakan WebSocket Secure untuk HiveMQ Cloud Public Broker
-        const mqttConfig = {
-            host: "broker.hivemq.com",
-            port: 8000,
-            path: "/mqtt",
-            useSSL: false  // Gunakan WSS untuk HTTPS
-        };
-        
+        const broker = "broker.hivemq.com";
+        const port = 8000;
         const topic = "power/monitor/data";
         const commandTopic = "power/monitor/command";
-        const clientId = "web_dashboard_" + Math.random().toString(36).substr(2, 10);
-
-        let mqttClient = null;
-        let reconnectAttempts = 0;
-        let maxReconnectAttempts = 10;
-        
-        // ============ PWA & Notification Setup ============
-        let swRegistration = null;
-        let notificationPermission = false;
-        let lastFaultState = { acOv: false, acOc: false, dcOv: false, dcOc: false, acFault: false, dcFault: false };
+        const clientId = "web_dashboard_" + Math.random().toString(16).substr(2, 8);
 
         let currentLimits = {
             ac_voltage: 260,
@@ -654,107 +541,18 @@
             dcLight: 'rgba(118, 75, 162, 0.2)'
         };
 
-        // ============ MQTT Connection ============
-        function connectMQTT() {
-            try {
-                // Update connection status
-                document.getElementById('connectionStatus').textContent = 'Connecting...';
-                document.getElementById('connectionStatus').className = 'status-badge connecting';
-                document.getElementById('mqttInfo').textContent = `Connecting to ${mqttConfig.host}:${mqttConfig.port}...`;
-                
-                // Create client with WebSocket URL
-                const wsUrl = `ws://${mqttConfig.host}:${mqttConfig.port}${mqttConfig.path}`;
-                const wssUrl = `wss://${mqttConfig.host}:${mqttConfig.port}${mqttConfig.path}`;
-                
-                // Gunakan WebSocket URL yang sesuai (WSS untuk HTTPS, WS untuk HTTP)
-                const useWss = window.location.protocol === 'http:';
-                const finalUrl = useWss ? wssUrl : wsUrl;
-                
-                console.log(`Connecting to MQTT via ${finalUrl}`);
-                
-                mqttClient = new Paho.MQTT.Client(
-                    mqttConfig.host,
-                    mqttConfig.port,
-                    mqttConfig.path,
-                    clientId
-                );
-                
-                mqttClient.onConnectionLost = onConnectionLost;
-                mqttClient.onMessageArrived = onMessageArrived;
-                
-                const connectOptions = {
-                    onSuccess: onConnect,
-                    onFailure: onConnectFailure,
-                    timeout: 10,
-                    keepAliveInterval: 60,
-                    mqttVersion: 4
-                };
-                
-                mqttClient.connect(connectOptions);
-                
-            } catch (error) {
-                console.error("MQTT Connection error:", error);
-                document.getElementById('connectionStatus').textContent = 'Error';
-                document.getElementById('connectionStatus').className = 'status-badge disconnected';
-                document.getElementById('mqttInfo').textContent = `Error: ${error.message}`;
-                setTimeout(connectMQTT, 10000);
-            }
-        }
+        let mqttClient = null;
 
-        function onConnect() {
-            console.log("MQTT Connected successfully");
-            document.getElementById('connectionStatus').textContent = 'Connected';
-            document.getElementById('connectionStatus').className = 'status-badge connected';
-            document.getElementById('mqttInfo').textContent = `Connected to ${mqttConfig.host}`;
-            reconnectAttempts = 0;
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             
-            // Subscribe to topic
-            mqttClient.subscribe(topic);
-            console.log(`Subscribed to topic: ${topic}`);
-            
-            // Request initial status
-            setTimeout(() => sendCommand('get_status'), 500);
-        }
-
-        function onConnectFailure(response) {
-            console.error("MQTT Connection failed:", response.errorMessage);
-            document.getElementById('connectionStatus').textContent = 'Disconnected';
-            document.getElementById('connectionStatus').className = 'status-badge disconnected';
-            document.getElementById('mqttInfo').textContent = `Connection failed: ${response.errorMessage || 'Unknown error'}`;
-            
-            reconnectAttempts++;
-            if (reconnectAttempts < maxReconnectAttempts) {
-                const delay = Math.min(5000 * reconnectAttempts, 30000);
-                document.getElementById('mqttInfo').textContent += ` - Retrying in ${delay/1000}s (${reconnectAttempts}/${maxReconnectAttempts})`;
-                setTimeout(connectMQTT, delay);
+            if (tab === 'monitor') {
+                document.getElementById('monitorTab').classList.add('active');
+                document.querySelector('.tab-btn:first-child').classList.add('active');
             } else {
-                document.getElementById('mqttInfo').textContent = 'Max reconnection attempts reached. Using simulator mode.';
-                enableSimulatorMode();
-            }
-        }
-
-        function onConnectionLost(response) {
-            if (response.errorCode !== 0) {
-                console.log("MQTT Connection lost:", response.errorMessage);
-                document.getElementById('connectionStatus').textContent = 'Disconnected';
-                document.getElementById('connectionStatus').className = 'status-badge disconnected';
-                document.getElementById('mqttInfo').textContent = 'Connection lost, reconnecting...';
-                setTimeout(connectMQTT, 5000);
-            }
-        }
-
-        function onMessageArrived(message) {
-            try {
-                const data = JSON.parse(message.payloadString);
-                console.log("MQTT Message received:", data);
-                
-                if (message.destinationName === topic) {
-                    updateDisplay(data.ac, data.dc);
-                    addDataPoint(Date.now(), data.ac, data.dc);
-                    if (data.limits) updateLimitsUI(data.limits);
-                }
-            } catch (e) {
-                console.error("Error parsing MQTT message:", e);
+                document.getElementById('settingsTab').classList.add('active');
+                document.querySelector('.tab-btn:last-child').classList.add('active');
             }
         }
 
@@ -765,192 +563,8 @@
                 mqttClient.send(message);
                 console.log("Command sent:", cmd);
             } else {
-                console.log("MQTT not connected, command not sent:", cmd);
-                if (!simulatorActive) {
-                    document.getElementById('mqttInfo').innerHTML += '<br>⚠️ MQTT disconnected. Using simulator mode.';
-                    enableSimulatorMode();
-                }
-            }
-        }
-
-        // ============ Simulator Mode ============
-        let simulatorActive = false;
-        let simulatorInterval = null;
-
-        function enableSimulatorMode() {
-            if (simulatorActive) return;
-            simulatorActive = true;
-            document.getElementById('mqttInfo').innerHTML += '<br>🔄 SIMULATOR MODE ACTIVE - Generating demo data';
-            startSimulator();
-        }
-
-        function startSimulator() {
-            if (simulatorInterval) clearInterval(simulatorInterval);
-            
-            // Generate normal data initially
-            generateSimulatorData(false, false);
-            
-            simulatorInterval = setInterval(() => {
-                generateSimulatorData(false, false);
-            }, 3000);
-        }
-
-        function generateSimulatorData(overvoltage = false, overcurrent = false) {
-            const acVoltage = overvoltage ? currentLimits.ac_voltage + 10 : 210 + Math.random() * 30;
-            const acCurrent = overcurrent ? currentLimits.ac_current + 2 : 5 + Math.random() * 4;
-            const dcVoltage = overvoltage ? currentLimits.dc_voltage + 5 : 12 + Math.random() * 8;
-            const dcCurrent = overcurrent ? currentLimits.dc_current + 1 : 2 + Math.random() * 3;
-            
-            const acOv = acVoltage > currentLimits.ac_voltage;
-            const acOc = acCurrent > currentLimits.ac_current;
-            const dcOv = dcVoltage > currentLimits.dc_voltage;
-            const dcOc = dcCurrent > currentLimits.dc_current;
-            
-            const acFault = (acOv || acOc) && currentFaults.ac_fault;
-            const dcFault = (dcOv || dcOc) && currentFaults.dc_fault;
-            
-            const acData = {
-                voltage: acVoltage,
-                current: acCurrent,
-                real_power: acVoltage * acCurrent * 0.9,
-                apparent_power: acVoltage * acCurrent,
-                pf: 0.9,
-                energy: Math.random() * 100,
-                relay_state: !acFault,
-                relay_auto: true,
-                overvoltage: acOv,
-                overcurrent: acOc,
-                fault_active: acFault,
-                test_mode: false
-            };
-            
-            const dcData = {
-                voltage: dcVoltage,
-                current: dcCurrent,
-                power: dcVoltage * dcCurrent,
-                relay_state: !dcFault,
-                relay_auto: true,
-                overvoltage: dcOv,
-                overcurrent: dcOc,
-                fault_active: dcFault
-            };
-            
-            updateDisplay(acData, dcData);
-            addDataPoint(Date.now(), acData, dcData);
-        }
-
-        function simulateNormalData() {
-            if (simulatorActive) {
-                generateSimulatorData(false, false);
-            } else if (mqttClient && mqttClient.isConnected()) {
-                // Send normal data via MQTT if connected
-                const normalData = createNormalMQTTData();
-                const message = new Paho.MQTT.Message(JSON.stringify(normalData));
-                message.destinationName = topic;
-                mqttClient.send(message);
-            }
-        }
-
-        function simulateOvervoltage() {
-            if (simulatorActive) {
-                generateSimulatorData(true, false);
-            } else if (mqttClient && mqttClient.isConnected()) {
-                const ovData = createOvervoltageData();
-                const message = new Paho.MQTT.Message(JSON.stringify(ovData));
-                message.destinationName = topic;
-                mqttClient.send(message);
-            }
-        }
-
-        function simulateOvercurrent() {
-            if (simulatorActive) {
-                generateSimulatorData(false, true);
-            } else if (mqttClient && mqttClient.isConnected()) {
-                const ocData = createOvercurrentData();
-                const message = new Paho.MQTT.Message(JSON.stringify(ocData));
-                message.destinationName = topic;
-                mqttClient.send(message);
-            }
-        }
-
-        function simulateFaultClear() {
-            currentFaults.ac_fault = false;
-            currentFaults.dc_fault = false;
-            if (simulatorActive) {
-                generateSimulatorData(false, false);
-            }
-            sendCommand('reset_all_faults');
-        }
-
-        function createNormalMQTTData() {
-            return {
-                ac: {
-                    voltage: 220 + Math.random() * 10,
-                    current: 5 + Math.random() * 3,
-                    real_power: 1100,
-                    apparent_power: 1210,
-                    pf: 0.91,
-                    energy: 123.456,
-                    relay_state: true,
-                    relay_auto: true,
-                    overvoltage: false,
-                    overcurrent: false,
-                    fault_active: false
-                },
-                dc: {
-                    voltage: 24 + Math.random() * 2,
-                    current: 3 + Math.random() * 2,
-                    power: 72,
-                    relay_state: true,
-                    relay_auto: true,
-                    overvoltage: false,
-                    overcurrent: false,
-                    fault_active: false
-                },
-                limits: currentLimits
-            };
-        }
-
-        function createOvervoltageData() {
-            const data = createNormalMQTTData();
-            data.ac.voltage = currentLimits.ac_voltage + 15;
-            data.ac.overvoltage = true;
-            data.ac.fault_active = true;
-            data.ac.relay_state = false;
-            data.dc.voltage = currentLimits.dc_voltage + 10;
-            data.dc.overvoltage = true;
-            data.dc.fault_active = true;
-            data.dc.relay_state = false;
-            return data;
-        }
-
-        function createOvercurrentData() {
-            const data = createNormalMQTTData();
-            data.ac.current = currentLimits.ac_current + 5;
-            data.ac.overcurrent = true;
-            data.ac.fault_active = true;
-            data.ac.relay_state = false;
-            data.dc.current = currentLimits.dc_current + 3;
-            data.dc.overcurrent = true;
-            data.dc.fault_active = true;
-            data.dc.relay_state = false;
-            return data;
-        }
-
-        // ============ UI Functions ============
-        function switchTab(tab) {
-            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            
-            if (tab === 'monitor') {
-                document.getElementById('monitorTab').classList.add('active');
-                document.querySelector('.tab-btn:first-child').classList.add('active');
-            } else if (tab === 'settings') {
-                document.getElementById('settingsTab').classList.add('active');
-                document.querySelectorAll('.tab-btn')[1].classList.add('active');
-            } else {
-                document.getElementById('simulatorTab').classList.add('active');
-                document.querySelectorAll('.tab-btn')[2].classList.add('active');
+                console.log("MQTT not connected");
+                alert("MQTT not connected. Please check connection.");
             }
         }
 
@@ -1083,6 +697,7 @@
                 dcFaultStatus.style.color = dcFault ? '#ef4444' : '#10b981';
             }
             
+            // Update fault notification
             let faultMessages = [];
             if (acOv) faultMessages.push('AC Overvoltage');
             if (acOc) faultMessages.push('AC Overcurrent');
@@ -1225,10 +840,10 @@
             chart.update();
         }
 
-        function switchChart(type, event) {
+        function switchChart(type) {
             currentChartType = type;
             document.querySelectorAll('#monitorTab .btn').forEach(btn => btn.classList.remove('active'));
-            if (event && event.target) event.target.classList.add('active');
+            event.target.classList.add('active');
             updateChart();
         }
 
@@ -1263,8 +878,6 @@
             updateRelayUI(acData.relay_state, acData.relay_auto, dcData.relay_state, dcData.relay_auto, acFault, dcFault);
             updateProtectionUI(acData.overvoltage, acData.overcurrent, dcData.overvoltage, dcData.overcurrent, acFault, dcFault);
             
-            checkAndNotifyFault(acData, dcData);
-            
             const testModeElem = document.getElementById('testModeStatus');
             if (testModeElem && acData.test_mode !== undefined) {
                 testModeElem.textContent = acData.test_mode ? 'ACTIVE' : 'Normal';
@@ -1272,164 +885,49 @@
             }
         }
 
-        // ============ Notification Functions ============
-        async function registerServiceWorker() {
-            if ('serviceWorker' in navigator) {
-                try {
-                    const registration = await navigator.serviceWorker.register('/sw.js');
-                    swRegistration = registration;
-                    console.log('Service Worker registered');
-                    return registration;
-                } catch (error) {
-                    console.error('Service Worker registration failed:', error);
+        function connectMQTT() {
+            mqttClient = new Paho.MQTT.Client(broker, port, clientId);
+            
+            mqttClient.onConnectionLost = (responseObject) => {
+                if (responseObject.errorCode !== 0) {
+                    document.getElementById('connectionStatus').textContent = 'Disconnected';
+                    document.getElementById('connectionStatus').className = 'status-badge disconnected';
+                    setTimeout(connectMQTT, 5000);
                 }
-            }
-            return null;
-        }
-
-        async function requestNotificationPermission() {
-            if (!('Notification' in window)) {
-                console.log('Browser does not support notifications');
-                return false;
-            }
-
-            const permission = await Notification.requestPermission();
-            if (permission === 'granted') {
-                notificationPermission = true;
-                document.getElementById('notificationPrompt').style.display = 'none';
-                document.getElementById('notificationStatus').textContent = 'Enabled ✓';
-                document.getElementById('notificationStatus').style.color = '#10b981';
-                return true;
-            } else {
-                notificationPermission = false;
-                document.getElementById('notificationStatus').textContent = 'Disabled - Click Enable';
-                document.getElementById('notificationStatus').style.color = '#ef4444';
-                return false;
-            }
-        }
-
-        async function sendPushNotification(title, body, tag = 'fault') {
-            if (!notificationPermission) return;
-            
-            if (swRegistration && swRegistration.showNotification) {
-                swRegistration.showNotification(title, {
-                    body: body,
-                    icon: 'https://via.placeholder.com/192x192?text=⚠️',
-                    badge: 'https://via.placeholder.com/96x96?text=Power',
-                    vibrate: [200, 100, 200, 100, 200],
-                    tag: tag,
-                    renotify: true,
-                    requireInteraction: true,
-                    data: {
-                        timestamp: Date.now(),
-                        type: 'fault'
-                    }
-                });
-            } else if (Notification.permission === 'granted') {
-                new Notification(title, {
-                    body: body,
-                    icon: 'https://via.placeholder.com/192x192?text=⚠️',
-                    tag: tag,
-                    requireInteraction: true
-                });
-            }
-        }
-
-        function checkAndNotifyFault(acData, dcData) {
-            const newFaults = {
-                acOv: acData.overvoltage || false,
-                acOc: acData.overcurrent || false,
-                dcOv: dcData.overvoltage || false,
-                dcOc: dcData.overcurrent || false,
-                acFault: acData.fault_active || false,
-                dcFault: dcData.fault_active || false
             };
-
-            let faultMessages = [];
             
-            if (newFaults.acOv && !lastFaultState.acOv) {
-                faultMessages.push(`⚡ AC OVERVOLTAGE! Voltage > ${currentLimits.ac_voltage}V`);
-                sendPushNotification('⚠️ Power Protection Alert', 
-                    `AC Overvoltage detected! Current: ${acData.voltage.toFixed(1)}V > Limit: ${currentLimits.ac_voltage}V`);
-            }
+            mqttClient.onMessageArrived = (message) => {
+                try {
+                    const data = JSON.parse(message.payloadString);
+                    
+                    if (message.destinationName === topic) {
+                        updateDisplay(data.ac, data.dc);
+                        addDataPoint(Date.now(), data.ac, data.dc);
+                        if (data.limits) updateLimitsUI(data.limits);
+                    }
+                } catch (e) {
+                    console.error("Error:", e);
+                }
+            };
             
-            if (newFaults.acOc && !lastFaultState.acOc) {
-                faultMessages.push(`🔌 AC OVERCURRENT! Current > ${currentLimits.ac_current}A`);
-                sendPushNotification('⚠️ Power Protection Alert', 
-                    `AC Overcurrent detected! Current: ${acData.current.toFixed(2)}A > Limit: ${currentLimits.ac_current}A`);
-            }
-            
-            if (newFaults.dcOv && !lastFaultState.dcOv) {
-                faultMessages.push(`⚡ DC OVERVOLTAGE! Voltage > ${currentLimits.dc_voltage}V`);
-                sendPushNotification('⚠️ Power Protection Alert', 
-                    `DC Overvoltage detected! Voltage: ${dcData.voltage.toFixed(1)}V > Limit: ${currentLimits.dc_voltage}V`);
-            }
-            
-            if (newFaults.dcOc && !lastFaultState.dcOc) {
-                faultMessages.push(`🔌 DC OVERCURRENT! Current > ${currentLimits.dc_current}A`);
-                sendPushNotification('⚠️ Power Protection Alert', 
-                    `DC Overcurrent detected! Current: ${dcData.current.toFixed(2)}A > Limit: ${currentLimits.dc_current}A`);
-            }
-            
-            if (newFaults.acFault && !lastFaultState.acFault) {
-                faultMessages.push(`🔴 AC RELAY FAULT! Relay turned OFF`);
-                sendPushNotification('🔴 Relay Fault', 
-                    'AC Relay has been turned OFF due to protection trip. Press RESET after values return to normal.');
-            }
-            
-            if (newFaults.dcFault && !lastFaultState.dcFault) {
-                faultMessages.push(`🔴 DC RELAY FAULT! Relay turned OFF`);
-                sendPushNotification('🔴 Relay Fault', 
-                    'DC Relay has been turned OFF due to protection trip. Press RESET after values return to normal.');
-            }
-            
-            if (!newFaults.acFault && lastFaultState.acFault && !newFaults.acOv && !newFaults.acOc) {
-                sendPushNotification('✅ Fault Cleared', 
-                    'AC parameters have returned to normal. Press RESET to reactivate relay.', 'clear');
-            }
-            
-            if (!newFaults.dcFault && lastFaultState.dcFault && !newFaults.dcOv && !newFaults.dcOc) {
-                sendPushNotification('✅ Fault Cleared', 
-                    'DC parameters have returned to normal. Press RESET to reactivate relay.', 'clear');
-            }
-            
-            lastFaultState = newFaults;
-            
-            if (faultMessages.length > 0) {
-                console.log('Fault detected:', faultMessages.join(', '));
-            }
-            
-            return faultMessages;
+            mqttClient.connect({
+                onSuccess: () => {
+                    document.getElementById('connectionStatus').textContent = 'Connected';
+                    document.getElementById('connectionStatus').className = 'status-badge connected';
+                    mqttClient.subscribe(topic);
+                    sendCommand('get_status');
+                },
+                onFailure: () => setTimeout(connectMQTT, 5000),
+                useSSL: false,
+                timeout: 10,
+                keepAliveInterval: 60
+            });
         }
 
-        function testNotification() {
-            sendPushNotification('🔔 Test Notification', 
-                'If you see this, push notifications are working!', 'test');
-        }
-
-        // ============ Initialize ============
-        window.onload = async () => {
+        window.onload = () => {
             initChart();
             connectMQTT();
             window.addEventListener('resize', () => chart && chart.resize());
-            
-            await registerServiceWorker();
-            
-            const enableBtn = document.getElementById('enableNotifications');
-            if (enableBtn) {
-                enableBtn.addEventListener('click', requestNotificationPermission);
-            }
-            
-            if (Notification.permission === 'granted') {
-                notificationPermission = true;
-                document.getElementById('notificationPrompt').style.display = 'none';
-                document.getElementById('notificationStatus').textContent = 'Enabled ✓';
-                document.getElementById('notificationStatus').style.color = '#10b981';
-            } else if (Notification.permission === 'denied') {
-                document.getElementById('notificationPrompt').style.display = 'none';
-                document.getElementById('notificationStatus').textContent = 'Blocked - Check browser settings';
-                document.getElementById('notificationStatus').style.color = '#ef4444';
-            }
         };
     </script>
 </body>
