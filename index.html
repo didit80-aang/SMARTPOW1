@@ -667,7 +667,7 @@
                 const wssUrl = `wss://${mqttConfig.host}:${mqttConfig.port}${mqttConfig.path}`;
                 
                 // Gunakan WebSocket URL yang sesuai (WSS untuk HTTPS, WS untuk HTTP)
-                const useWss = window.location.protocol === 'https:';
+                const useWss = window.location.protocol === 'http:';
                 const finalUrl = useWss ? wssUrl : wsUrl;
                 
                 console.log(`Connecting to MQTT via ${finalUrl}`);
